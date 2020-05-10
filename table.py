@@ -11,8 +11,9 @@ except ImportError:
     warn("could not import pandas, conversion disabled")
     DataFrame = NotImplemented
 
-from .utils import getTerminalSize, _MEMMAP_EXT, _ATTR_EXT, _ACCESS_MODES
+from .utils import getTerminalSize
 from .column import MemmapColumn
+from .mathexpression import MathExpression, interpret_variable
 
 
 class MemmapTableSlice:
@@ -352,6 +353,26 @@ class MemmapTableSlice:
         """
         return (len(self._columns), len(self),)
 
+    def apply(self, func, *funcargs):
+        args = []
+        for arg in funcargs:
+            if arg in self:
+                args.append(self[arg])
+            else:
+                args.append(arg)
+        result =  np.vectorize(func)(*args)
+        return result
+
+    def eval(self, string):
+        return MathExpression(string)(self)
+
+    def query(self, string):
+        mask = MathExpression(string)(self)
+        if mask.dtype.kind != "b":
+            message = "the expression '{:}' does not yield boolean values"
+            raise ValueError(message.format(string))
+        return self[mask]
+
     def row_iter(self, chunksize, verbose=True):
         """
         Yields an iterator over chunks of the table rows, optionally showing
@@ -486,9 +507,9 @@ class MemmapTable(MemmapTableSlice):
             elif nrows <= 0:
                 raise ValueError(message)
         # check the access mode
-        if mode not in _ACCESS_MODES:
+        if mode not in MemmapColumn._ACCESS_MODES:
             message = "mode must be one of {:}"
-            raise ValueError(message.format(str(_ACCESS_MODES)))
+            raise ValueError(message.format(str(MemmapColumn._ACCESS_MODES)))
         self._mode = mode
         if self.mode == "w+":  # wipe existing data
             if os.path.exists(self.root):
@@ -539,7 +560,7 @@ class MemmapTable(MemmapTableSlice):
                 abspath = os.path.join(root, f)
                 path, ext = os.path.splitext(abspath)
                 # find numpy binary files with and attached attribute JSON file
-                if ext == _MEMMAP_EXT and os.path.exists(path + _ATTR_EXT):
+                if ext == MemmapColumn._MEMMAP_EXT and os.path.exists(path + MemmapColumn._ATTR_EXT):
                     relpath = os.path.relpath(path, rootpath)
                     # load the memory map
                     columns[relpath] = MemmapColumn(path, mode=mode)
@@ -691,8 +712,8 @@ class MemmapTable(MemmapTableSlice):
         del memmap
         # delete the files from disk
         base_path = os.path.join(self._root, path)
-        os.remove(base_path + _MEMMAP_EXT)
-        os.remove(base_path + _ATTR_EXT)
+        os.remove(base_path + MemmapColumn._MEMMAP_EXT)
+        os.remove(base_path + MemmapColumn._ATTR_EXT)
         # remove empty parent directories
         path_segments = path.split(os.sep)[:-1]  # drop the actual column name
         for i in range(len(path_segments)):

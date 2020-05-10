@@ -9,7 +9,7 @@ except ImportError:
     warn("could not import pandas, conversion disabled")
     Series = NotImplemented
 
-from .utils import getTerminalSize, _MEMMAP_EXT, _ATTR_EXT, _ACCESS_MODES
+from .utils import getTerminalSize
 
 
 class MemmapColumn(np.memmap):
@@ -36,12 +36,15 @@ class MemmapColumn(np.memmap):
     """
 
     _attr = None
+    _MEMMAP_EXT = ".npy"
+    _ATTR_EXT = ".attr"
+    _ACCESS_MODES = ("r", "r+", "w+")
 
     def __new__(cls, path, dtype=None, shape=None, mode="r"):
         # check the access mode
-        if mode not in _ACCESS_MODES:
+        if mode not in cls._ACCESS_MODES:
             message = "mode must be one of {:}"
-            raise ValueError(message.format(str(_ACCESS_MODES)))
+            raise ValueError(message.format(str(cls._ACCESS_MODES)))
 
         if mode == "w+":
             # check the input dtype
@@ -70,12 +73,12 @@ class MemmapColumn(np.memmap):
                 raise ValueError(message)
             # create a JSON metadata
             meta_dict = {"dtype": dtype, "shape": shape, "attr": None}
-            with open(path + _ATTR_EXT, "w") as f:
+            with open(path + cls._ATTR_EXT, "w") as f:
                 json.dump(meta_dict, f)
 
         else:
             # load existing data
-            if not os.path.exists(path + _ATTR_EXT):
+            if not os.path.exists(path + cls._ATTR_EXT):
                 message = "target '{:}' not found"
                 raise OSError(message.format(path))
             else:
@@ -84,20 +87,20 @@ class MemmapColumn(np.memmap):
                 if shape is not None:
                     print("WARNING: ignoring 'shape' parameter")
                 # load the meta data from the companion JSON file
-                with open(path + _ATTR_EXT) as f:
+                with open(path + cls._ATTR_EXT) as f:
                     meta_dict = json.load(f)
                 dtype = meta_dict.pop("dtype")
                 shape = tuple(meta_dict.pop("shape"))
 
         try:  # initialize the memory map and the write the meta data
             instance = super().__new__(
-                cls, path + _MEMMAP_EXT, np.dtype(dtype), mode, shape=shape)
+                cls, path + cls._MEMMAP_EXT, np.dtype(dtype), mode, shape=shape)
             # assign the attributes
             instance.__dict__["_attr"] = meta_dict.pop("attr")
         except Exception as e:
             # if anything went wrong, delete newly created output
             if mode == "w+":
-                for ext in (_ATTR_EXT, _MEMMAP_EXT):
+                for ext in (cls._ATTR_EXT, cls._MEMMAP_EXT):
                     try:
                         os.remove(path + ext)
                     except OSError:
@@ -195,7 +198,7 @@ class MemmapColumn(np.memmap):
     def _update_shape(self, new_shape):
         meta_dict = dict(
             dtype=self.dtype.str, shape=new_shape, attr=self.attr)
-        with open(self.filename.replace(_MEMMAP_EXT, _ATTR_EXT), "w") as f:
+        with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT), "w") as f:
             json.dump(meta_dict, f)
 
     def __repr__(self):
@@ -229,7 +232,7 @@ class MemmapColumn(np.memmap):
             Data attribute.
         """
         if self.filename is not None:
-            with open(self.filename.replace(_MEMMAP_EXT, _ATTR_EXT)) as f:
+            with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)) as f:
                 meta_dict = json.load(f)
             self._attr = meta_dict.pop("attr")
         return self._attr
@@ -259,7 +262,7 @@ class MemmapColumn(np.memmap):
             meta_str = json.dumps(metadata)
             # join the JSON strings and write to disk
             json_str = "{{{:}, {:}}}".format(meta_str[1:-1], attr_str[1:-1])
-            with open(self.filename.replace(_MEMMAP_EXT, _ATTR_EXT), "w") as f:
+            with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT), "w") as f:
                 f.write(json_str)
 
     def to_series(self, index=None, dtype=None, name=None):

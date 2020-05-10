@@ -1,11 +1,6 @@
 import os
 
 
-_MEMMAP_EXT = ".npy"
-_ATTR_EXT = ".attr"
-_ACCESS_MODES = ("r", "r+", "w+")
-
-
 def getTerminalSize():
     def ioctl_GWINSZ(fd):
         try:
