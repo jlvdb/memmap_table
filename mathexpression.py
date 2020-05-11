@@ -4,20 +4,6 @@ from copy import copy
 import numpy as np
 
 
-operator_hierarchy = (
-    ("^",), ("*", "/", "%",), ("+", "-",), ("==", "!=", "<", ">", "<=", ">=",),
-    ("NOT",), ("AND", "OR", "XOR",))
-operator_map = {
-    "^": np.power, "*": np.multiply, "/": np.divide, "%": np.mod, "+": np.add,
-    "-": np.subtract, "==": np.equal, "!=": np.not_equal, "<": np.less,
-    ">": np.greater, "<=": np.less_equal, ">=": np.greater_equal,
-    "NOT": np.logical_not, "AND": np.logical_and, "OR": np.logical_or,
-    "XOR": np.logical_xor}
-operator_nargs = {
-    "^": 2, "*": 2, "/": 2, "%": 2, "+": 2, "-": 2, "==": 2, "!=": 2, "<": 2,
-    ">": 2, "<=": 2, ">=": 2, "NOT": 1, "AND": 2, "OR": 2, "XOR": 2}
-
-
 def interpret_variable(string):
     if string.upper() == "TRUE":
         return True
@@ -35,14 +21,57 @@ def interpret_variable(string):
 
 class MathTerm:
 
+    _operator_map = {
+        "**": np.power,
+        "*": np.multiply,
+        "/": np.divide,
+        "%": np.mod,
+        "+": np.add,
+        "-": np.subtract,
+        "~": np.bitwise_not,
+        "&": np.bitwise_and,
+        "|": np.bitwise_or,
+        "^": np.bitwise_xor,
+        "==": np.equal,
+        "!=": np.not_equal,
+        "<": np.less,
+        ">": np.greater,
+        "<=": np.less_equal,
+        ">=": np.greater_equal,
+        "NOT": np.logical_not,
+        "AND": np.logical_and,
+        "OR": np.logical_or,
+        "XOR": np.logical_xor}
+    _operator_nargs = {
+        "**": 2,
+        "*": 2,
+        "/": 2,
+        "%": 2,
+        "+": 2,
+        "-": 2,
+        "~": 1,
+        "&": 2,
+        "|": 2,
+        "^": 2,
+        "==": 2,
+        "!=": 2,
+        "<": 2,
+        ">": 2,
+        "<=": 2,
+        ">=": 2,
+        "NOT": 1,
+        "AND": 2,
+        "OR": 2,
+        "XOR": 2}
+
     def __init__(self, symbol):
         self.symbol = copy(symbol)
         try:
             # get the correct numpy ufunc
-            self.func = operator_map[symbol]
+            self.func = self._operator_map[symbol]
             self.name = self.func.__name__
             # figure out the correct argument layout
-            self.nargs = operator_nargs[symbol]
+            self.nargs = self._operator_nargs[symbol]
             if self.nargs == 1:
                 self.args = ["%1"]
             else:
@@ -125,6 +154,16 @@ class MathTerm:
 
 class MathExpression:
 
+    _operator_hierarchy = (
+        ("**",),
+        ("*", "/", "%",),
+        ("+", "-",),
+        ("==", "!=", "<", ">", "<=", ">=",),
+        ("~",),
+        ("&", "|", "^",),
+        ("NOT",),
+        ("AND", "OR", "XOR",))
+
     def __init__(self, string):
         self.string = string
         # scan the expression to find terms that are within brackets
@@ -206,7 +245,7 @@ class MathExpression:
 
     def interpret_expression(self, expression_list):
         # scan and replace expression by MathTerms based on operator precedence
-        for operator_list in operator_hierarchy:
+        for operator_list in self._operator_hierarchy:
             # continue replace
             while any(  # subsitute symbols by MathTerms
                     operator in expression_list
