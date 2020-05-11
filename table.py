@@ -13,7 +13,7 @@ except ImportError:
 
 from .utils import getTerminalSize
 from .column import MemmapColumn
-from .mathexpression import MathExpression, interpret_variable
+from .mathexpression import MathExpression
 
 
 class MemmapTableSlice:

@@ -4,21 +4,6 @@ from copy import copy
 import numpy as np
 
 
-def interpret_variable(string):
-    if string.upper() == "TRUE":
-        return True
-    elif string.upper() == "FALSE":
-        return False
-    try:
-        return int(string)
-    except ValueError:
-        try:
-            return float(string)
-        except ValueError:
-            message = "cannot convert '{:}' to numerical type"
-            raise ValueError(message.format(string))
-
-
 class MathTerm:
 
     _operator_map = {
@@ -131,6 +116,21 @@ class MathTerm:
             "  %%%c = %s" % (chr(var_idx), eval_term.expression()))
         return expression_lines
 
+    @staticmethod
+    def interpret_variable(string):
+        if string.upper() == "TRUE":
+            return True
+        elif string.upper() == "FALSE":
+            return False
+        try:
+            return int(string)
+        except ValueError:
+            try:
+                return float(string)
+            except ValueError:
+                message = "cannot convert '{:}' to numerical type"
+                raise ValueError(message.format(string))
+
     def __call__(self, table):
         if type(self.args[0]) is type(self):
             arg1 = self.args[0](table)
@@ -138,7 +138,7 @@ class MathTerm:
             try:
                 arg1 = table[self.args[0]]
             except (KeyError, TypeError):
-                arg1 = interpret_variable(self.args[0])
+                arg1 = self.interpret_variable(self.args[0])
         if self.nargs == 1:
             return self.func(arg1)
         else:
@@ -148,7 +148,7 @@ class MathTerm:
                 try:
                     arg2 = table[self.args[1]]
                 except (KeyError, TypeError):
-                    arg2 = interpret_variable(self.args[1])
+                    arg2 = self.interpret_variable(self.args[1])
             return self.func(arg1, arg2)
 
 
