@@ -13,7 +13,7 @@ except ImportError:
 
 from .utils import getTerminalSize
 from .column import MemmapColumn
-from .mathexpression import MathExpression
+from .mathexpression import MathTerm
 
 
 class MemmapTableSlice:
@@ -354,6 +354,9 @@ class MemmapTableSlice:
         return (len(self._columns), len(self),)
 
     def apply(self, func, *funcargs):
+        """
+        TODO
+        """
         args = []
         for arg in funcargs:
             if arg in self:
@@ -364,10 +367,16 @@ class MemmapTableSlice:
         return result
 
     def eval(self, string):
-        return MathExpression(string)(self)
+        """
+        TODO
+        """
+        return MathTerm(string)(self)
 
     def query(self, string):
-        mask = MathExpression(string)(self)
+        """
+        TODO
+        """
+        mask = MathTerm(string)(self)
         if mask.dtype.kind != "b":
             message = "the expression '{:}' does not yield boolean values"
             raise ValueError(message.format(string))
