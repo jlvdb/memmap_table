@@ -370,13 +370,13 @@ class MemmapTableSlice:
         """
         TODO
         """
-        return MathTerm(string)(self)
+        return MathTerm.from_string(string)(self)
 
     def query(self, string):
         """
         TODO
         """
-        mask = MathTerm(string)(self)
+        mask = MathTerm.from_string(string)(self)
         if mask.dtype.kind != "b":
             message = "the expression '{:}' does not yield boolean values"
             raise ValueError(message.format(string))
