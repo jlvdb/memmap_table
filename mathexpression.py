@@ -104,6 +104,35 @@ for rank in reversed(range(operator_max_rank + 1)):
         operator_hierarchy.append(operators)
 
 
+def bracket_hierarchy(math_string):
+    message = "too many {:} brackets"
+    math_string_list = []
+    level = 0
+    expr_string = ""
+    for char in math_string:
+        # increase the level and end the current partial expression
+        if char == "(":
+            if len(expr_string.strip()) > 0 and level == 0:
+                math_string_list.append(expr_string)
+                expr_string = ""
+            level += 1
+        expr_string += char
+        # decrease the level and end the current partial expression
+        if char == ")":
+            level -= 1
+            if len(expr_string.strip()) > 0 and level == 0:
+                math_string_list.append(bracket_hierarchy(expr_string[1:-1]))
+                expr_string = ""
+        if level < 0:
+            raise SyntaxError(message.format("closing"))
+    if len(expr_string.strip()) > 0:
+        math_string_list.append(expr_string)
+    if level != 0:
+        raise SyntaxError(message.format(
+            "closing" if level < 0 else "opening"))
+    return math_string_list
+
+
 def split_by_operator(math_string_list):
     math_string = math_string_list[0]
     for operator in operator_by_length:
@@ -197,44 +226,28 @@ def replace_entry(math_string_list):
                 return insert_term(math_string_list, idx)
 
 
-def scan_brackets(math_string):
-    math_string = math_string.strip()
-    counts = Counter(math_string)
-    # check the occurences of ( and )
-    try:
-        n_open = counts["("]
-    except KeyError:
-        n_open = 0
-    try:
-        n_close = counts[")"]
-    except KeyError:
-        n_close = 0
-    # check that the number of brackets match
-    if n_open > n_close:
-        raise SyntaxError("too many opening brackets")
-    elif n_open < n_close:
-        raise SyntaxError("too many closing brackets")
-    # list which parts of the expression are within brackets
-    while len(math_string) > 0:
-        level = 0
-        bracket_level = []
-        # assing each character a priority level based on the bracketing
-        for char in math_string:
-            if char == ")":  # decrease priority level
-                level -= 1
-            if level < 0:
-                raise SyntaxError("too many closing brackets")
-            bracket_level.append(level)
-            if char == "(":  # increase priority level
-                level += 1
-        # check for redundant brackets
-        if Counter(bracket_level)[0] == 2:  # remove redundant outer levels
-            math_string = math_string[1:-1]
+def resolve_brackets(math_string_list):
+    # recursively unpack bracket terms
+    expression_list = []
+    for entry in math_string_list:
+        if type(entry) is list:
+            expression_list.append(resolve_brackets(entry))
+        elif type(entry) is str:
+            expression_list.extend(split_by_operator([entry]))
         else:
-            break
-    # process the term
-    print(split(math_string).code)
-    return bracket_level, math_string
+            expression_list.append(entry)
+    # substitute the operator symbols by matching Operator instances
+    substituted = substitute_operators(expression_list)
+    # create a MathTerm instance
+    while len(substituted) > 1:
+        substituted = replace_entry(substituted)
+        if substituted is None:
+            raise SyntaxError()
+    if len(substituted) != 1:
+        raise SyntaxError()
+    else:
+        term = substituted[0]
+    return term
 
 
 def parse_operand(string):
@@ -265,19 +278,12 @@ class MathTerm:
     @staticmethod
     def from_string(expression_string):
         # split the input on operator occurences
-        splitted = split_by_operator([expression_string])
-        # substitute the operator symbols by matching Operator instances
-        substituted = substitute_operators(splitted)
-        # create a MathTerm instance
-        message = "malformed expression {:}".format(expression_string)
-        while len(substituted) > 1:
-            substituted = replace_entry(substituted)
-            if substituted is None:
-                raise SyntaxError(message)
-        if len(substituted) != 1:
-            raise SyntaxError(message)
-        else:
-            term = substituted[0]
+        math_levels = bracket_hierarchy(expression_string)
+        try:
+            term = resolve_brackets(math_levels)
+        except SyntaxError:
+            raise SyntaxError("malformed expression '{:}'".format(
+                expression_string))
         return term
 
     @property
@@ -365,8 +371,19 @@ if __name__ == "__main__":
 
     import sys
 
+
     math_string = " ".join(sys.argv[1:])
     print("input:     ", math_string)
     term = MathTerm.from_string(math_string)
-    print("code:      ", term.code)
     print("expression:", term.expression)
+    print("code:      ", term.code)
+    try:
+        t_result = term()
+        print("result:    ", t_result)
+        p_result = eval(math_string)
+        assert(t_result == p_result)
+    except AssertionError:
+        print("ERROR: incorrect result '{:}', expected '{:}'".format(
+            str(t_result), str(p_result)))
+    except Exception:
+        print("ERROR: evaluation not possible")
