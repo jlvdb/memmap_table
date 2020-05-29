@@ -84,7 +84,6 @@ for identifier, ufunc, rank, nargs in [
     operator._props = (identifier, ufunc, rank)
     operator_list.append(operator)
 # compile some useful listings of the operators
-operator_symbols = set(operator.symbol for operator in operator_list)
 operator_by_length = sorted(
     operator_list, key=lambda key: len(key.symbol), reverse=True)
 operator_dict = {}  # dictionary of lists
@@ -372,18 +371,64 @@ if __name__ == "__main__":
     import sys
 
 
-    math_string = " ".join(sys.argv[1:])
-    print("input:     ", math_string)
-    term = MathTerm.from_string(math_string)
-    print("expression:", term.expression)
-    print("code:      ", term.code)
-    try:
-        t_result = term()
-        print("result:    ", t_result)
-        p_result = eval(math_string)
-        assert(t_result == p_result)
-    except AssertionError:
-        print("ERROR: incorrect result '{:}', expected '{:}'".format(
-            str(t_result), str(p_result)))
-    except Exception:
-        print("ERROR: evaluation not possible")
+    def process_string(math_string, verbose=False):
+        print("input:     ", math_string)
+        if verbose:
+            term = MathTerm.from_string(math_string)
+            print("expression:", term.expression)
+            print("code:      ", term.code)
+            try:
+                t_result = term()
+                print("result:    ", t_result)
+                p_result = eval(math_string)
+                assert(t_result == p_result)
+            except AssertionError:
+                print("ERROR: incorrect result '{:}', expected '{:}'".format(
+                    str(t_result), str(p_result)))
+            except Exception:
+                print("ERROR: evaluation not possible")
+        else:
+            term = MathTerm.from_string(math_string)
+            try:
+                t_result = term()
+                p_result = eval(math_string)
+                print("OK")
+            except AssertionError:
+                print("ERROR: incorrect result '{:}', expected '{:}'".format(
+                    str(t_result), str(p_result)))
+            except Exception:
+                print("ERROR: evaluation not possible")
+
+
+    if len(sys.argv) > 1:
+        process_string(" ".join(sys.argv[1:]), verbose=True)
+
+    else:
+        math_strings = [
+            '(2*(4**3)*6789 + 2)',
+            '(2*(4**3)*6789 + 2)**0.4',
+            '1 * (2 + 2)',
+            '1 * (2 + 2)**0.4',
+            '1 * (2*(4 + 3)*6789 + 2)**0.4',
+            '1 * (2*(4**3)*6789 + 2)**0.4',
+            '1 * (2*(4**3)*6789 + 2)+-0.4',
+            '1 * (2*(4**3)*6789 + 2)+0.4',
+            '2 * (((1 + 2)))',
+            '2 * ((4) + 5)',
+            '2 * (1 + 2)',
+            '2 * (4 + 5)',
+            '2 * 1 + 2',
+            '2*((4**3))*6789 + 2',
+            '2*(4**3)*6789 + 2 +2',
+            '2*(4**3)*6789 + 2',
+            '2*(4**3)*6789.3 + 2 +2',
+            '5 / ((2 * 2) + 1)',
+            '5 / ((2 * 2) + 2)',
+            '5 / ((2 * 2))',
+            '5 / (2 * (4 * 5))',
+            '5 / (2 * (4 + 5))',
+            '5 / (2 * 1)',
+            '5 / (2 * 2)',
+        ]
+        for math_string in math_strings:
+            process_string(math_string)
