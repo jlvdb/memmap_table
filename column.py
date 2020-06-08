@@ -49,7 +49,6 @@ class MemmapColumn(np.memmap):
         if mode == "w+":
             # check the input dtype
             if type(dtype) not in (str, type, np.dtype):
-                print(path, dtype, shape, mode)
                 message = "expected dtype of type {:}, {:} or {:} but got {:}"
                 raise TypeError(
                     message.format(
@@ -94,7 +93,8 @@ class MemmapColumn(np.memmap):
 
         try:  # initialize the memory map and the write the meta data
             instance = super().__new__(
-                cls, path + cls._MEMMAP_EXT, np.dtype(dtype), mode, shape=shape)
+                cls, path + cls._MEMMAP_EXT, np.dtype(dtype),
+                mode, shape=shape)
             # assign the attributes
             instance.__dict__["_attr"] = meta_dict.pop("attr")
         except Exception as e:
@@ -198,7 +198,8 @@ class MemmapColumn(np.memmap):
     def _update_shape(self, new_shape):
         meta_dict = dict(
             dtype=self.dtype.str, shape=new_shape, attr=self.attr)
-        with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT), "w") as f:
+        attr_path = self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)
+        with open(attr_path, "w") as f:
             json.dump(meta_dict, f)
 
     def __repr__(self):
@@ -232,7 +233,8 @@ class MemmapColumn(np.memmap):
             Data attribute.
         """
         if self.filename is not None:
-            with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)) as f:
+            attr_path = self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)
+            with open(attr_path) as f:
                 meta_dict = json.load(f)
             self._attr = meta_dict.pop("attr")
         return self._attr
@@ -262,7 +264,8 @@ class MemmapColumn(np.memmap):
             meta_str = json.dumps(metadata)
             # join the JSON strings and write to disk
             json_str = "{{{:}, {:}}}".format(meta_str[1:-1], attr_str[1:-1])
-            with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT), "w") as f:
+            attr_path = self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)
+            with open(attr_path, "w") as f:
                 f.write(json_str)
 
     def to_series(self, index=None, dtype=None, name=None):

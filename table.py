@@ -569,7 +569,9 @@ class MemmapTable(MemmapTableSlice):
                 abspath = os.path.join(root, f)
                 path, ext = os.path.splitext(abspath)
                 # find numpy binary files with and attached attribute JSON file
-                if ext == MemmapColumn._MEMMAP_EXT and os.path.exists(path + MemmapColumn._ATTR_EXT):
+                has_memmap_ext = ext == MemmapColumn._MEMMAP_EXT
+                attr_exist = os.path.exists(path + MemmapColumn._ATTR_EXT)
+                if has_memmap_ext and attr_exist:
                     relpath = os.path.relpath(path, rootpath)
                     # load the memory map
                     columns[relpath] = MemmapColumn(path, mode=mode)
