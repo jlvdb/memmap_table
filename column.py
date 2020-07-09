@@ -262,7 +262,8 @@ class MemmapColumn(np.memmap):
             meta_str = json.dumps(metadata)
             # join the JSON strings and write to disk
             json_str = "{{{:}, {:}}}".format(meta_str[1:-1], attr_str[1:-1])
-            with open(self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT), "w") as f:
+            path = self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)
+            with open(path, "w") as f:
                 f.write(json_str)
 
     def to_series(self, index=None, dtype=None, name=None):
