@@ -76,7 +76,7 @@ class MemmapTableSlice:
                         raise ValueError(message.format(col, length))
         return length
 
-    def _check_state(self):
+    def _check_state(self) -> None:
         """
         Check whether the underlying memory map file pointers are closed and
         raise an error if so.
@@ -84,7 +84,7 @@ class MemmapTableSlice:
         if self.closed:
             raise ValueError("I/O operation on closed table")
 
-    def _value_formatter(self, max_disp=10):
+    def _value_formatter(self, max_disp=10) -> tuple:
         """
         Formats the data of the columns into a list of equal length strings. If
         there is insufficient space along either axis, the middle part of
@@ -162,7 +162,7 @@ class MemmapTableSlice:
             length = 0
         return representation, length
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         if self.closed:
             # header
             string = "<{c:} of closed {p:} object at {i:}>".format(
@@ -264,7 +264,7 @@ class MemmapTableSlice:
         return self._columns.keys()
 
     @property
-    def closed(self) -> tuple:
+    def closed(self) -> bool:
         """
         Whether the underlying memory map file pointers are closed.
         """
@@ -353,36 +353,7 @@ class MemmapTableSlice:
         """
         return (len(self._columns), len(self),)
 
-    def apply(self, func, *funcargs):
-        """
-        TODO
-        """
-        args = []
-        for arg in funcargs:
-            if arg in self:
-                args.append(self[arg])
-            else:
-                args.append(arg)
-        result =  np.vectorize(func)(*args)
-        return result
-
-    def eval(self, string):
-        """
-        TODO
-        """
-        return MathTerm.from_string(string)(self)
-
-    def query(self, string):
-        """
-        TODO
-        """
-        mask = MathTerm.from_string(string)(self)
-        if mask.dtype.kind != "b":
-            message = "the expression '{:}' does not yield boolean values"
-            raise ValueError(message.format(string))
-        return self[mask]
-
-    def row_iter(self, chunksize=10000, verbose=True):
+    def row_iter(self, chunksize=10000, verbose=True) -> iter:
         """
         Yields an iterator over chunks of the table rows, optionally showing
         the progress.
@@ -421,7 +392,7 @@ class MemmapTableSlice:
             stdout.write("done after {:,d} records\n".format(n_max))
             stdout.flush()
 
-    def to_dataframe(self, index=None):
+    def to_dataframe(self, index=None) -> DataFrame:
         """
         Convert the table data to a pands.DataFrame object with the same data
         type and column names.
@@ -453,7 +424,7 @@ class MemmapTableSlice:
         df = DataFrame(col_dict, index=idx_data)
         return df
 
-    def to_records(self):
+    def to_records(self) -> np.recarray:
         """
         Convert the table data to a numpy.recarray object with the same data
         type and column names converted to field names.
@@ -469,7 +440,7 @@ class MemmapTableSlice:
             recarray[col] = self[col]
         return recarray
 
-    def flush(self):
+    def flush(self) -> None:
         """
         Flush all internal column buffers.
         """
@@ -574,7 +545,7 @@ class MemmapTable(MemmapTableSlice):
                     columns[relpath] = MemmapColumn(path, mode=mode)
         return columns
 
-    def __repr__(self) -> str:
+    def __repr__(self):
         if self.closed:
             # header
             string = "<closed {c:} object at {i:}>".format(
@@ -601,7 +572,7 @@ class MemmapTable(MemmapTableSlice):
     def __exit__(self, *args, **kwargs):
         self.close()
 
-    def resize(self, new_length):
+    def resize(self, new_length) -> None:
         """
         Resize the memory mapped data columns along their first dimension, the
         length of the table. The file pointers must be closed temporarily and
@@ -700,7 +671,7 @@ class MemmapTable(MemmapTableSlice):
         self._columns[path] = column
         return column
 
-    def delete_column(self, path):
+    def delete_column(self, path) -> None:
         """
         Delete a single column by removing the internal buffer and deleting the
         memmory mapped data and it's attributes from disk. If the data is
@@ -730,7 +701,7 @@ class MemmapTable(MemmapTableSlice):
             if len(os.listdir(parent_path)) == 0:
                 shutil.rmtree(parent_path)
 
-    def copy_column(self, src, dst):
+    def copy_column(self, src, dst) -> None:
         """
         Rename a data column named 'src' to a new name 'dst'. This corresponds
         to moving the underlying memorymap within the file system.
@@ -758,7 +729,7 @@ class MemmapTable(MemmapTableSlice):
         for start, end in self.row_iter(int(1e5), verbose=False):
             dst_data[start:end] = source_column[start:end]
 
-    def rename_column(self, src, dst):
+    def rename_column(self, src, dst) -> None:
         """
         Copy a data column named 'src' to a new column 'dst'. This corresponds
         to copying the underlying data on the file system.
@@ -775,7 +746,7 @@ class MemmapTable(MemmapTableSlice):
         self.copy_column(src, dst)
         self.delete_column(src)
 
-    def close(self):
+    def close(self) -> None:
         """
         Flush all and close internal column buffers.
         """

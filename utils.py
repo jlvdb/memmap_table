@@ -1,7 +1,7 @@
 import os
 
 
-def getTerminalSize():
+def getTerminalSize() -> tuple:
     def ioctl_GWINSZ(fd):
         try:
             import fcntl, termios, struct

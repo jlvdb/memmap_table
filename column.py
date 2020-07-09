@@ -108,7 +108,7 @@ class MemmapColumn(np.memmap):
             raise e
         return instance
 
-    def _value_formatter(self, max_disp=10, padding="0"):
+    def _value_formatter(self, max_disp=10, padding="0") -> tuple:
         """
         Formats the data values into a list of equal length strings. If there
         are more then the maximum number of values, the middle part of data is
@@ -195,7 +195,7 @@ class MemmapColumn(np.memmap):
             length = len(representation)
         return representation, length
 
-    def _update_shape(self, new_shape):
+    def _update_shape(self, new_shape) -> None:
         meta_dict = dict(
             dtype=self.dtype.str, shape=new_shape, attr=self.attr)
         attr_path = self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)
@@ -268,7 +268,7 @@ class MemmapColumn(np.memmap):
             with open(attr_path, "w") as f:
                 f.write(json_str)
 
-    def to_series(self, index=None, dtype=None, name=None):
+    def to_series(self, index=None, dtype=None, name=None) -> Series:
         """
         Convert the data to a pandas.Series object.
 
