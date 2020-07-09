@@ -343,6 +343,16 @@ class MathTerm:
         expression = " ".join(expression_list)
         return expression
 
+    def _substitute_characters(self, string, substitue):
+        new_operands = []
+        for operand in self._operands:
+            if type(operand) is type(self):
+                operand._substitute_characters(string, substitue)
+            elif type(operand) is str:
+                operand = operand.replace(string, substitue)
+            new_operands.append(operand)
+        self.operands = tuple(new_operands)
+
     def __call__(self, table=None):
         if self.operands is None:
             raise RuntimeError("operands not set")
