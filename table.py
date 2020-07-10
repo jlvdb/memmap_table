@@ -352,7 +352,7 @@ class MemmapTableSlice:
         """
         return (len(self._columns), len(self),)
 
-    def row_iter(self, chunksize=10000, verbose=True) -> iter:
+    def row_iter(self, chunksize=10000) -> iter:
         """
         Yields an iterator over chunks of the table rows, optionally showing
         the progress.
@@ -361,8 +361,6 @@ class MemmapTableSlice:
         -----------
         chunksize : int
             Number of rows to select per iteration.
-        verbose : bool
-            Whether to print a progress percentage to stdout.
 
         Yields:
         -------
@@ -373,23 +371,16 @@ class MemmapTableSlice:
         """
         self._check_state()
         n_max = len(self)
-        progress_msg = "progress: {:7.2%}\r"
         # yield first and last index
         # iterate in chunks
         if type(chunksize) is int and chunksize > 0:
             for start in range(0, n_max, chunksize):
-                if verbose:
-                    stdout.write(progress_msg.format(start / n_max))
-                    stdout.flush()
                 # truncate last chunk to table length
                 end = min(n_max, start + chunksize)
                 yield start, end
         else:
             message = "chunksize must be None or a positive integer"
             raise TypeError(message)
-        if verbose:
-            stdout.write("done after {:,d} records\n".format(n_max))
-            stdout.flush()
 
     def to_dataframe(self, index=None) -> DataFrame:
         """
