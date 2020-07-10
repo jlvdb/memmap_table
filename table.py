@@ -224,8 +224,7 @@ class MemmapTableSlice:
                 assert(type(item) is list)
                 assert(all(type(entry) is str for entry in item))
                 columns = OrderedDict(
-                    (col, data) for col, data in self._columns.items()
-                    if col in item)
+                    (col, self._columns[col]) for col in item)
             # selecting row subsets, delegate to numpy slicing
             except AssertionError:
                 columns = OrderedDict(
