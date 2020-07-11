@@ -179,7 +179,7 @@ class MemmapTableSlice:
                 for rep in representation:
                     string += rep + "\n"
             # footer
-            string += "\n [{r:d} rows x {d:d} columns]\n".format(
+            string += "\n [{r:,d} rows x {d:d} columns]\n".format(
                 r=self.shape[1], d=self.shape[0])
             string += " mode: {m:} >".format(m=self.mode)
         return string
@@ -550,7 +550,7 @@ class MemmapTable(MemmapTableSlice):
                 for rep in representation:
                     string += rep + "\n"
             # footer
-            string += "\n [{r:d} rows x {d:d} columns]\n".format(
+            string += "\n [{r:,d} rows x {d:d} columns]\n".format(
                 r=self.shape[1], d=self.shape[0])
             string += " mode: {m:}\n".format(m=self.mode)
             string += " root: {r:} >".format(r=self.root)
