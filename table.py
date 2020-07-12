@@ -275,7 +275,7 @@ class MemmapTableSlice:
     @property
     def colnames(self) -> tuple:
         """
-        List of the column names.
+        Tuple of the column names.
         """
         return tuple(self._columns.keys())
 
@@ -317,7 +317,7 @@ class MemmapTableSlice:
     @property
     def ndim(self) -> OrderedDict:
         """
-        The number of dimensions the data in each column has.
+        List the number of dimensions the data in each column has.
         """
         dim_map = [(col, data.ndim) for col, data in self._columns.items()]
         return OrderedDict(dim_map)
@@ -352,7 +352,7 @@ class MemmapTableSlice:
         """
         return (len(self._columns), len(self),)
 
-    def row_iter(self, chunksize=10000) -> iter:
+    def row_iter(self, chunksize=16384) -> iter:
         """
         Yields an iterator over chunks of the table rows, optionally showing
         the progress.
