@@ -212,8 +212,12 @@ class MemmapColumn(np.memmap):
             for rep in representation:
                 string += " {:}\n".format(rep)  # indent matching the header
             # footer
+            if self.filename is None:
+                memmap_desc = "[cached]"
+            else:
+                memmap_desc = self.filename
             string += " shape: {:}, dtype: {:},\n memmap: {:} >".format(
-                str(self.shape), str(self.dtype), self.filename)
+                str(self.shape), str(self.dtype), memmap_desc)
         except TypeError:  # formatting scalars (e.g. after slicing  ...)
             string = super().__repr__()
         return string
