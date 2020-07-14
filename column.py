@@ -157,17 +157,25 @@ class MemmapColumn(np.memmap):
                 else:  # use fixed floating point
                     representation = []
                     for v in values:
-                        val_str = "{:.6f}".format(v)
-                        num, dec = val_str.split(".")
-                        # truncate trailing zeros
-                        dec = dec[0] + dec[1:].rstrip("0")
-                        representation.append([num, dec])
+                        if not np.isfinite(v):  # special values
+                            representation.append([str(v), ""])
+                        else:  # normal numbers
+                            val_str = "{:.6f}".format(v)
+                            num, dec = val_str.split(".")
+                            # truncate trailing zeros
+                            dec = dec[0] + dec[1:].rstrip("0")
+                            representation.append([num, dec])
                     # rund second pass to align the floating points
-                    max_decimal = max(len(dec) for num, dec in representation)
+                    max_decimal = max(
+                        len(dec) for num, dec in representation)
                     # join to a single floating point number
                     for i, (num, dec) in enumerate(representation):
-                        representation[i] = ".".join(
-                            [num, dec.ljust(max_decimal, padding)])
+                        if dec == "":  # special values
+                            representation[i] = \
+                                num + dec.ljust(max_decimal, " ")
+                        else:  # normal numbers
+                            representation[i] = ".".join(
+                                [num, dec.ljust(max_decimal, padding)])
             else:
                 representation = [str(v) for v in values]
             # if the elements are multidimensional, decorate with with braces
