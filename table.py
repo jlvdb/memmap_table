@@ -185,10 +185,7 @@ class MemmapTableSlice:
         return string
 
     def __len__(self):
-        if self.closed:
-            return 0
-        else:
-            return self._len
+        return self._len
 
     def __contains__(self, item):
         return item in self._columns
