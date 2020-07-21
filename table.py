@@ -713,7 +713,7 @@ class MemmapTable(MemmapTableSlice):
         # create the destination
         dst_data = self.add_column(dst, dtype, item_shape, attr)
         # copy the data by assignment
-        for start, end in self.row_iter(int(1e5), verbose=False):
+        for start, end in self.row_iter():
             dst_data[start:end] = source_column[start:end]
 
     def rename_column(self, src, dst) -> None:
