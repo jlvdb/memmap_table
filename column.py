@@ -150,10 +150,13 @@ class MemmapColumn(np.memmap):
                 if (1e-4 > absolute_max) or (absolute_max > 1e4):  # scientific
                     representation = []
                     for v in values:
-                        val_str = "{:.4e}".format(v)
-                        man, exp = val_str.split("e")
-                        exp = exp[0] + "0" + exp[1:]
-                        representation.append("e".join([man, exp]))
+                        if not np.isfinite(v):  # special values
+                            representation.append(str(v))
+                        else:  # normal numbers
+                            val_str = "{:.4e}".format(v)
+                            man, exp = val_str.split("e")
+                            exp = exp[0] + "0" + exp[1:]
+                            representation.append("e".join([man, exp]))
                 else:  # use fixed floating point
                     representation = []
                     for v in values:
