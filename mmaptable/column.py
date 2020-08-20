@@ -48,11 +48,10 @@ class MemmapColumn(np.memmap):
 
         if mode == "w+":
             # check the input dtype
-            if type(dtype) not in (str, type, np.dtype):
-                message = "expected dtype of type {:}, {:} or {:} but got {:}"
-                raise TypeError(
-                    message.format(
-                        str(np.dtype), str, str(type), str(type(dtype))))
+            if type(dtype) not in (str, np.dtype):
+                message = "expected dtype of type {:} or {:} but got {:}"
+                message = message.format(str(np.dtype), str, str(type(dtype)))
+                raise TypeError(message)
             elif type(dtype) is np.dtype:
                 dtype = dtype.str
             else:
