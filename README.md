@@ -4,7 +4,7 @@ Self-describing columnar data storage system that is backed by memory mapping.
 
 A `MemmapTable` object is a table that contains a collection of binary columns with
 equal length. The table can be resized and columns can be added, copied, renamed or
-deleted dynamically. By design, data is preferentially accessed column-wise
+deleted dynamically. By design, data is preferentially accessed column-wise.
 
 ## Columns
 
@@ -34,6 +34,9 @@ and `date` creates the following structure in the file system:
  ├─ date.npy
  └─ data.attr
 ```
+
+`MemmapTable` implements methods to convert data to pure `numpy` arrays and
+`pandas.DataFrames`.
 
 ## Example code
 
