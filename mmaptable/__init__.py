@@ -1,3 +1,3 @@
-from .table import MemmapColumn
-from .table import MemmapTable
+from .column import MmapColumn
+from .table import MmapTable
 __version__ = "1.0"

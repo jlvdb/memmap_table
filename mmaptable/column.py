@@ -12,7 +12,7 @@ except ImportError:
 from .utils import getTerminalSize
 
 
-class MemmapColumn(np.memmap):
+class MmapColumn(np.memmap):
     """
     Table column backed by a self-descriptive binary numpy memory map. Inherits
     the properties of a numpy memory map, including slicing and numerical

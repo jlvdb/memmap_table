@@ -2,21 +2,21 @@
 
 Self-describing columnar data storage system that is backed by memory mapping.
 
-A `MemmapTable` object is a table that contains a collection of binary columns with
+A `MmapTable` object is a table that contains a collection of binary columns with
 equal length. The table can be resized and columns can be added, copied, renamed or
 deleted dynamically. By design, data is preferentially accessed column-wise.
 
 ## Columns
 
-Each column is represented by a `MemmapColumn`, a memmory mapped binary array based on
+Each column is represented by a `MmapColumn`, a memmory mapped binary array based on
 `numpy` arrays. Columns therefore behave like ordinary numpy arrays and support all
-fixed-size datatypes implemented in numpy. Additionally, `MemmapColumn` implements
+fixed-size datatypes implemented in numpy. Additionally, `MmapColumn` implements
 attributes that can hold arbitrary Python objects that are JSON serialisable (i.e.
 `int`, `float`, `str`, `bool`, `list`, `dict`).
 
 ## Table
 
-`MemmapTable` behaves similar to `numpy` arrays with fields and support the same slicing
+`MmapTable` behaves similar to `numpy` arrays with fields and support the same slicing
 and assignement logic. The most important difference is, that they are not contiguous in
 memmory. Instead, a table is an ordinary filesystem directory in which the memmory-
 mapped columns are stored. The column names are determined form the memmory map file
@@ -35,7 +35,7 @@ and `date` creates the following structure in the file system:
  └─ data.attr
 ```
 
-`MemmapTable` implements methods to convert data to pure `numpy` arrays and
+`MmapTable` implements methods to convert data to pure `numpy` arrays and
 `pandas.DataFrames`.
 
 ## Example code
@@ -45,7 +45,7 @@ import mmaptable
 import numpy as np
 
 # create a new table
-with mmaptable.MemmapTable("mytable", nrows=100, mode="w+") as tab:
+with mmaptable.MmapTable("mytable", nrows=100, mode="w+") as tab:
 
     # add an int32 type column
     int_col = tab.add_column("int_col", dtype="i4")

@@ -1,8 +1,8 @@
 import os
 import shutil
 from collections import OrderedDict, Counter
-from warnings import warn
 from sys import stdout
+from warnings import warn
 
 import numpy as np
 try:
@@ -12,22 +12,22 @@ except ImportError:
     DataFrame = NotImplemented
 
 from .utils import getTerminalSize
-from .column import MemmapColumn
+from .column import MmapColumn
 from .mathexpression import MathTerm
 
 
-class MemmapTableSlice:
+class MmapTableSlice:
     """
-    Slice of a MemmapTable with limited data access returned by MemmapTable
+    Slice of a MmapTable with limited data access returned by MmapTable
     when creating slices. While item assignement is allowed if writing on the
     parent table is permitted, columns cannot be added, renamed, copied or
-    deleted. If the parent MemmapTable is closed, the data of the slice is no
+    deleted. If the parent MmapTable is closed, the data of the slice is no
     longer available.
 
     Parameters:
     -----------
-    parent : MemmapTable
-        Reference to the parent MemmapTable from which the data originates.
+    parent : MmapTable
+        Reference to the parent MmapTable from which the data originates.
     columns : OrderedDict
         Internal column buffers of the parent Table that are passed on the
         sliced.
@@ -53,7 +53,7 @@ class MemmapTableSlice:
         Parameters:
         -----------
         coldict : dict
-            Mapping of column names to column buffers (MemmapColumn).
+            Mapping of column names to column buffers (MmapColumn).
         
         Returns:
         --------
@@ -198,21 +198,21 @@ class MemmapTableSlice:
     def __getitem__(self, item):
         """
         Select a subset of the table. If the indexing item it is interpreted as
-        column name and the corresponding MemmapColumn is returned, otherwise
-        a MemmapTableSlice instance is returned.
+        column name and the corresponding MmapColumn is returned, otherwise
+        a MmapTableSlice instance is returned.
         If the indexing item is a list of strings, these strings are
         interpreted as column names. The returned object will contain a subset
         of the table columns.
         Any other indexing items will select row-subsets. The returned object
         will contain all of the table columns and the indexing item is used
         to select a subset of elements in each column.
-        Note: Returned MemmapTableSlice instances have limited write access.
+        Note: Returned MmapTableSlice instances have limited write access.
         """
         self._check_state()
-        # selecting a single column by its name -> MemmapColumn
+        # selecting a single column by its name -> MmapColumn
         if type(item) is str:
             subtable = self._columns[item]
-        # selecting a set of columns or rows -> MemmapTable
+        # selecting a set of columns or rows -> MmapTable
         else:
             # Create a child instance representing the selected subset of data,
             # inheriting its data buffers from this parent instance.
@@ -230,7 +230,7 @@ class MemmapTableSlice:
                 parent = self
             else:
                 parent = self._parent
-            subtable = MemmapTableSlice(parent, columns)
+            subtable = MmapTableSlice(parent, columns)
         return subtable
 
     def __setitem__(self, item, value):
@@ -436,13 +436,13 @@ class MemmapTableSlice:
                 col.flush()
 
 
-class MemmapTable(MemmapTableSlice):
+class MmapTable(MmapTableSlice):
     """
     Table backed by self-descriptive binary numpy memory maps. Mimics the
     indexing behaviour of structured numpy arrays and inherits some descriptive
     attributes Data is stored in binary files below a root directory with
     additional descriptive meta data (data type, shape, attributes), see
-    MemmapColumn.
+    MmapColumn.
 
     Parameters:
     -----------
@@ -471,9 +471,9 @@ class MemmapTable(MemmapTableSlice):
             elif nrows <= 0:
                 raise ValueError(message)
         # check the access mode
-        if mode not in MemmapColumn._ACCESS_MODES:
+        if mode not in MmapColumn._ACCESS_MODES:
             message = "mode must be one of {:}"
-            raise ValueError(message.format(str(MemmapColumn._ACCESS_MODES)))
+            raise ValueError(message.format(str(MmapColumn._ACCESS_MODES)))
         self._mode = mode
         if self.mode == "w+":  # wipe existing data
             if os.path.exists(self.root):
@@ -516,7 +516,7 @@ class MemmapTable(MemmapTableSlice):
         Returns:
         --------
         columns : OrderedDict
-            Mapping of column names to column buffer instances (MemmapColumn).
+            Mapping of column names to column buffer instances (MmapColumn).
         """
         columns = OrderedDict()
         for root, _, files in os.walk(rootpath):
@@ -524,12 +524,12 @@ class MemmapTable(MemmapTableSlice):
                 abspath = os.path.join(root, f)
                 path, ext = os.path.splitext(abspath)
                 # find numpy binary files with and attached attribute JSON file
-                has_memmap_ext = ext == MemmapColumn._MEMMAP_EXT
-                attr_exist = os.path.exists(path + MemmapColumn._ATTR_EXT)
+                has_memmap_ext = ext == MmapColumn._MEMMAP_EXT
+                attr_exist = os.path.exists(path + MmapColumn._ATTR_EXT)
                 if has_memmap_ext and attr_exist:
                     relpath = os.path.relpath(path, rootpath)
                     # load the memory map
-                    columns[relpath] = MemmapColumn(path, mode=mode)
+                    columns[relpath] = MmapColumn(path, mode=mode)
         return columns
 
     def __repr__(self):
@@ -604,7 +604,7 @@ class MemmapTable(MemmapTableSlice):
 
     def add_column(
             self, path, dtype, item_shape=None, attr=None,
-            overwrite=False) -> MemmapColumn:
+            overwrite=False) -> MmapColumn:
         """
         Create a new column at a given path and with given data type. Optional
         arguments specify the shape of higher data dimensions and set data
@@ -628,7 +628,7 @@ class MemmapTable(MemmapTableSlice):
 
         Returns:
         --------
-        column : MemmapColumn
+        column : MmapColumn
             The newly created column buffer.
         """
         self._check_state()
@@ -652,7 +652,7 @@ class MemmapTable(MemmapTableSlice):
         if item_shape is not None:
             shape.extend(item_shape)
         # create the column and register it internally
-        column = MemmapColumn(filepath, dtype, tuple(shape), mode="w+")
+        column = MmapColumn(filepath, dtype, tuple(shape), mode="w+")
         if attr is not None:  # set the optional attributes
             column.attr = attr
         self._columns[path] = column
@@ -678,8 +678,8 @@ class MemmapTable(MemmapTableSlice):
         del memmap
         # delete the files from disk
         base_path = os.path.join(self._root, path)
-        os.remove(base_path + MemmapColumn._MEMMAP_EXT)
-        os.remove(base_path + MemmapColumn._ATTR_EXT)
+        os.remove(base_path + MmapColumn._MEMMAP_EXT)
+        os.remove(base_path + MmapColumn._ATTR_EXT)
         # remove empty parent directories
         path_segments = path.split(os.sep)[:-1]  # drop the actual column name
         for i in range(len(path_segments)):
