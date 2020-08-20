@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Iterable, List, Optional, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -10,6 +11,9 @@ except ImportError:
     Series = NotImplemented
 
 from .utils import getTerminalSize
+
+
+JsonTypes = Union[None, bool, float, int, str, list, tuple, dict]
 
 
 class MmapColumn(np.memmap):
@@ -40,7 +44,12 @@ class MmapColumn(np.memmap):
     _ATTR_EXT = ".attr"
     _ACCESS_MODES = ("r", "r+", "w+")
 
-    def __new__(cls, path, dtype=None, shape=None, mode="r"):
+    def __new__(
+            cls,
+            path: str,
+            dtype: Union[str, np.dtype, None] = None,
+            shape: Optional[Tuple[int]] = None,
+            mode: str = "r"):
         # check the access mode
         if mode not in cls._ACCESS_MODES:
             message = "mode must be one of {:}"
@@ -107,7 +116,10 @@ class MmapColumn(np.memmap):
             raise e
         return instance
 
-    def _value_formatter(self, max_disp=10, padding="0") -> tuple:
+    def _value_formatter(
+            self,
+            max_disp: int = 10,
+            padding: str = "0") -> Tuple[List[str], int]:
         """
         Formats the data values into a list of equal length strings. If there
         are more then the maximum number of values, the middle part of data is
@@ -205,7 +217,7 @@ class MmapColumn(np.memmap):
             length = len(representation)
         return representation, length
 
-    def _update_shape(self, new_shape) -> None:
+    def _update_shape(self, new_shape: Tuple[int]) -> None:
         meta_dict = dict(
             dtype=self.dtype.str, shape=new_shape, attr=self.attr)
         attr_path = self.filename.replace(self._MEMMAP_EXT, self._ATTR_EXT)
@@ -236,7 +248,7 @@ class MmapColumn(np.memmap):
         return super().__str__()
 
     @property
-    def attr(self):
+    def attr(self) -> JsonTypes:
         """
         Obtain user-defined data attributes. These are only preserved, if the
         instance is backed with a valid memory map and an attribute file.
@@ -254,14 +266,14 @@ class MmapColumn(np.memmap):
         return self._attr
     
     @attr.setter
-    def attr(self, attribute):
+    def attr(self, attribute: JsonTypes):
         """
         Assign a data attribute. Attributes are flushed to disk immedately if a
         valid memory map and an attribute file exists.
 
         Parameters:
         --------
-        attr : None, bool, float, int, str, list, dict
+        attr : None, bool, float, int, str, list, tuple, dict
             Data attribute.
         """
         self.flush()  # prevent data loss if the serialisation fails
@@ -282,7 +294,11 @@ class MmapColumn(np.memmap):
             with open(attr_path, "w") as f:
                 f.write(json_str)
 
-    def to_series(self, index=None, dtype=None, name=None) -> Series:
+    def to_series(
+            self,
+            index: Optional[Iterable[int]] = None,
+            dtype: Union[str, np.dtype, None] = None,
+            name: Optional[str] = None) -> Series:
         """
         Convert the data to a pandas.Series object.
 

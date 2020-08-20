@@ -2,6 +2,7 @@ import os
 import shutil
 from collections import OrderedDict, Counter
 from sys import stdout
+from typing import Iterator, Iterable, KeysView, List, Optional, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -12,8 +13,13 @@ except ImportError:
     DataFrame = NotImplemented
 
 from .utils import getTerminalSize
-from .column import MmapColumn
+from .column import MmapColumn, JsonTypes
 from .mathexpression import MathTerm
+
+
+SlicingTypes = Union[str, List[str], Iterable]
+SlicingReturn = Union["MmapTableSlice", MmapColumn]
+SlicingSet = Union["MmapTableSlice", "MmapTable", np.ndarray]
 
 
 class MmapTableSlice:
@@ -35,7 +41,10 @@ class MmapTableSlice:
 
     _parent = None
 
-    def __init__(self, parent, columns):
+    def __init__(
+            self,
+            parent: "MmapTable",
+            columns: OrderedDict):
         self._parent = parent
         self._root = parent.root
         self._mode = parent.mode
@@ -45,7 +54,7 @@ class MmapTableSlice:
         self._len = self._check_column_length(columns)
 
     @staticmethod
-    def _check_column_length(coldict) -> int:
+    def _check_column_length(coldict: OrderedDict) -> int:
         """
         Verify that all columns have the same number of rows to detect
         potential corruption of the meta data.
@@ -84,7 +93,7 @@ class MmapTableSlice:
         if self.closed:
             raise ValueError("I/O operation on closed table")
 
-    def _value_formatter(self, max_disp=10) -> tuple:
+    def _value_formatter(self, max_disp: int = 10) -> Tuple[List[str], int]:
         """
         Formats the data of the columns into a list of equal length strings. If
         there is insufficient space along either axis, the middle part of
@@ -190,12 +199,12 @@ class MmapTableSlice:
     def __contains__(self, item):
         return item in self._columns
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["MmapTableSlice"]:
         self._check_state()
         for i in range(self._len):
             yield self[i]
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: SlicingTypes) -> SlicingReturn:
         """
         Select a subset of the table. If the indexing item it is interpreted as
         column name and the corresponding MmapColumn is returned, otherwise
@@ -233,7 +242,7 @@ class MmapTableSlice:
             subtable = MmapTableSlice(parent, columns)
         return subtable
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item: SlicingTypes, value: SlicingSet):
         """
         Set values of a subset of items of the table. If selecting items of
         multiple columns, the values must be a numpy.ndarray with matching
@@ -253,7 +262,7 @@ class MmapTableSlice:
             message = "input type {:} is not supported"
             raise TypeError(message.format(str(type(value))))
 
-    def _ipython_key_completions_(self):
+    def _ipython_key_completions_(self) -> KeysView[str]:
         """
         Used by ipython to infer column names for auto-completion
         """
@@ -342,14 +351,14 @@ class MmapTableSlice:
         return sum(data.size for data in self._columns.values())
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> Tuple[int, int]:
         """
         The number of columns and rows of the table. This does not reflect the
         true shape of the table since each column can be multidimensional.
         """
         return (len(self._columns), len(self),)
 
-    def row_iter(self, chunksize=16384) -> iter:
+    def row_iter(self, chunksize=16384) -> Iterable[Tuple[int, int]]:
         """
         Yields an iterator over chunks of the table rows, optionally showing
         the progress.
@@ -379,7 +388,7 @@ class MmapTableSlice:
             message = "chunksize must be None or a positive integer"
             raise TypeError(message)
 
-    def to_dataframe(self, index=None) -> DataFrame:
+    def to_dataframe(self, index: Optional[Iterable[int]] = None) -> DataFrame:
         """
         Convert the table data to a pands.DataFrame object with the same data
         type and column names.
@@ -461,7 +470,11 @@ class MmapTable(MmapTableSlice):
     _closed = False
     _parent = None
 
-    def __init__(self, path, nrows=None, mode="r"):
+    def __init__(
+            self,
+            path: str,
+            nrows: Optional[int] = None,
+            mode: str = "r"):
         self._root = os.path.expanduser(os.path.abspath(path))
         # check the requested number of rows
         if nrows is not None:
@@ -500,7 +513,7 @@ class MmapTable(MmapTableSlice):
             self._len = nrows
 
     @staticmethod
-    def _init_data(rootpath, mode) -> OrderedDict:
+    def _init_data(rootpath: str, mode: str) -> OrderedDict:
         """
         Scan the root node for valid column buffers. Open all buffers with the
         requrested access permissions.
@@ -559,7 +572,7 @@ class MmapTable(MmapTableSlice):
     def __exit__(self, *args, **kwargs):
         self.close()
 
-    def resize(self, new_length) -> None:
+    def resize(self, new_length: int) -> None:
         """
         Resize the memory mapped data columns along their first dimension, the
         length of the table. The file pointers must be closed temporarily and
@@ -603,8 +616,12 @@ class MmapTable(MmapTableSlice):
             self._len = self._check_column_length(self._columns)
 
     def add_column(
-            self, path, dtype, item_shape=None, attr=None,
-            overwrite=False) -> MmapColumn:
+            self,
+            path: str,
+            dtype: Union[str, np.dtype],
+            item_shape: Optional[Tuple] = None,
+            attr: Optional[JsonTypes] = None,
+            overwrite: Optional[bool] = False) -> MmapColumn:
         """
         Create a new column at a given path and with given data type. Optional
         arguments specify the shape of higher data dimensions and set data
@@ -658,7 +675,7 @@ class MmapTable(MmapTableSlice):
         self._columns[path] = column
         return column
 
-    def delete_column(self, path) -> None:
+    def delete_column(self, path: str) -> None:
         """
         Delete a single column by removing the internal buffer and deleting the
         memmory mapped data and it's attributes from disk. If the data is
@@ -688,7 +705,7 @@ class MmapTable(MmapTableSlice):
             if len(os.listdir(parent_path)) == 0:
                 shutil.rmtree(parent_path)
 
-    def copy_column(self, src, dst) -> None:
+    def copy_column(self, src: str, dst: str) -> None:
         """
         Rename a data column named 'src' to a new name 'dst'. This corresponds
         to moving the underlying memorymap within the file system.
@@ -716,7 +733,7 @@ class MmapTable(MmapTableSlice):
         for start, end in self.row_iter():
             dst_data[start:end] = source_column[start:end]
 
-    def rename_column(self, src, dst) -> None:
+    def rename_column(self, src: str, dst: str) -> None:
         """
         Copy a data column named 'src' to a new column 'dst'. This corresponds
         to copying the underlying data on the file system.
