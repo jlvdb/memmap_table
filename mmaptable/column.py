@@ -14,6 +14,7 @@ from .utils import getTerminalSize
 
 
 JsonTypes = Union[None, bool, float, int, str, list, tuple, dict]
+InitType = Union[str, type, np.dtype]
 
 
 class MmapColumn(np.memmap):
@@ -47,7 +48,7 @@ class MmapColumn(np.memmap):
     def __new__(
             cls,
             path: str,
-            dtype: Union[str, np.dtype, None] = None,
+            dtype: Optional[InitType] = None,
             shape: Optional[Tuple[int]] = None,
             mode: str = "r"):
         # check the access mode
@@ -57,9 +58,10 @@ class MmapColumn(np.memmap):
 
         if mode == "w+":
             # check the input dtype
-            if type(dtype) not in (str, np.dtype):
-                message = "expected dtype of type {:} or {:} but got {:}"
-                message = message.format(str(np.dtype), str, str(type(dtype)))
+            if type(dtype) not in (str, type, np.dtype):
+                message = "expected dtype of type {:}, {:} or {:} but got {:}"
+                message = message.format(
+                    str, str(type), str(np.dtype), str(type(dtype)))
                 raise TypeError(message)
             elif type(dtype) is np.dtype:
                 dtype = dtype.str
