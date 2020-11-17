@@ -14,7 +14,6 @@ except ImportError:
 
 from .utils import getTerminalSize
 from .column import MmapColumn, JsonTypes
-from .mathexpression import MathTerm
 
 
 SlicingTypes = Union[str, List[str], Iterable]
